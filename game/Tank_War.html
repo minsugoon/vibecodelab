@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RETRO TANK WARS v2.2</title>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+    :root {
+        --bg-color: #111;
+        --ui-bg: #222;
+        --text-color: #0f0; /* Retro Green */
+        --accent-color: #ff00ff;
+        --danger-color: #ff3333;
+    }
+
+    body {
+        margin: 0;
+        height: 100vh;
+        overflow: hidden;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        font-family: 'VT323', monospace;
+        user-select: none;
+        /* 화면 중앙 정렬 */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    /* 게임 컨테이너 (고정 크기) */
+    #game-container {
+        position: relative;
+        width: 800px;
+        height: 500px;
+        box-shadow: 0 0 30px rgba(0, 255, 0, 0.1);
+        border: 2px solid #333;
+        background-color: #000;
+    }
+
+    canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+
+    #ui-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        z-index: 10;
+    }
+
+    .top-bar {
+        background: rgba(0, 0, 0, 0.7);
+        padding: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 2px solid var(--text-color);
+        font-size: 24px;
+        pointer-events: auto;
+    }
+
+    .wind-indicator {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .quit-btn {
+        background: var(--danger-color);
+        color: #fff;
+        border: 2px solid #fff;
+        padding: 5px 15px;
+        font-family: 'VT323', monospace;
+        font-size: 20px;
+        cursor: pointer;
+        box-shadow: 2px 2px 0 #880000;
+        margin-left: 20px;
+    }
+    .quit-btn:active {
+        transform: translate(2px, 2px);
+        box-shadow: none;
+    }
+
+    .controls {
+        background: rgba(0, 0, 0, 0.8);
+        padding: 15px;
+        border-top: 2px solid var(--text-color);
+        pointer-events: auto;
+        display: none;
+        justify-content: center;
+        gap: 20px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .controls.active {
+        display: flex;
+    }
+
+    .control-group {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    button {
+        background: var(--text-color);
+        color: #000;
+        border: none;
+        padding: 5px 15px;
+        font-family: 'VT323', monospace;
+        font-size: 20px;
+        cursor: pointer;
+        box-shadow: 2px 2px 0 #005500;
+    }
+
+    button:active {
+        transform: translate(2px, 2px);
+        box-shadow: none;
+    }
+
+    button:disabled {
+        background: #555;
+        cursor: not-allowed;
+    }
+
+    .fire-btn {
+        background: #f00;
+        color: #fff;
+        font-size: 24px;
+        padding: 10px 30px;
+        box-shadow: 2px 2px 0 #880000;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+
+    input[type=range] {
+        width: 150px;
+        accent-color: var(--text-color);
+        cursor: pointer;
+    }
+
+    /* 모달 스타일 (컨테이너 내부 기준 중앙 정렬) */
+    .modal {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: #000;
+        border: 4px solid var(--text-color);
+        padding: 30px;
+        text-align: center;
+        pointer-events: auto;
+        box-shadow: 10px 10px 0 rgba(0, 255, 0, 0.3);
+        z-index: 100;
+        min-width: 300px;
+    }
+
+    .modal h1 {
+        margin: 0 0 20px 0;
+        font-size: 48px;
+        color: var(--text-color);
+        text-shadow: 2px 2px #fff;
+    }
+
+    .player-setup {
+        text-align: left;
+        margin-bottom: 20px;
+        max-height: 250px; /* 고정 높이 맵에 맞춰 조정 */
+        overflow-y: auto;
+    }
+
+    .setup-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        font-size: 22px;
+    }
+
+    select {
+        background: #000;
+        color: #fff;
+        border: 1px solid #fff;
+        font-family: inherit;
+        font-size: inherit;
+    }
+
+    .hidden {
+        display: none !important;
+    }
+
+    #turn-msg {
+        position: absolute;
+        top: 25%;
+        width: 100%;
+        text-align: center;
+        font-size: 40px;
+        color: yellow;
+        text-shadow: 2px 2px #000;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.5s;
+        z-index: 20;
+    }
+
+    .result-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        font-size: 20px;
+    }
+    .result-table th, .result-table td {
+        border: 1px solid #555;
+        padding: 5px;
+    }
+    .result-table th { color: var(--text-color); }
+</style>
+</head>
+<body>
+
+    <!-- 고정 크기 게임 컨테이너 -->
+    <div id="game-container">
+        <canvas id="gameCanvas" width="800" height="500"></canvas>
+
+        <div id="ui-layer">
+            <div class="top-bar">
+                <div style="display:flex; align-items:center;">
+                    <button class="quit-btn" onclick="quitGame()" title="Quit to Main Menu">EXIT</button>
+                    <div id="turn-info" style="margin-left: 20px;">Player 1's Turn</div>
+                </div>
+                
+                <div class="wind-indicator">
+                    <span>WIND:</span>
+                    <span id="wind-text">0</span>
+                    <div style="width: 100px; height: 10px; background: #333; border:1px solid #555;">
+                        <div id="wind-bar-fill" style="width: 0%; height: 100%; background: #0ff; margin: 0 auto; position: relative; left: 0;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls" id="controls">
+                <div class="control-group">
+                    <label>ANGLE: <span id="angle-val">45</span>°</label>
+                    <input type="range" id="angle-input" min="0" max="180" value="45">
+                </div>
+                <div class="control-group">
+                    <label>POWER: <span id="power-val">500</span></label>
+                    <input type="range" id="power-input" min="100" max="1000" value="500">
+                </div>
+                <div class="control-group">
+                    <label>DIR</label>
+                    <button onclick="toggleDirection()" id="dir-btn">RIGHT ▶</button>
+                </div>
+                <button class="fire-btn" onclick="fire()" id="fire-btn">FIRE!</button>
+            </div>
+        </div>
+
+        <div id="turn-msg">PLAYER 1 TURN</div>
+
+        <!-- 시작 화면 모달 -->
+        <div id="start-modal" class="modal">
+            <h1>TANK WARS v2.2</h1>
+            <div class="player-setup">
+                <div class="setup-row">
+                    <label>Players:</label>
+                    <select id="player-count" onchange="updateSetupRows()">
+                        <option value="2">2 Players</option>
+                        <option value="3">3 Players</option>
+                        <option value="4">4 Players</option>
+                        <option value="5">5 Players</option>
+                    </select>
+                </div>
+                <div id="setup-rows-container"></div>
+            </div>
+            <button onclick="startGame()" style="width: 100%; padding: 10px; font-size: 24px;">START GAME</button>
+        </div>
+
+        <!-- 결과 화면 모달 -->
+        <div id="result-modal" class="modal hidden">
+            <h1>GAME OVER</h1>
+            <div id="winner-msg" style="color: yellow; font-size: 30px; margin-bottom: 20px;"></div>
+            <table class="result-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Player</th>
+                        <th>HP</th>
+                    </tr>
+                </thead>
+                <tbody id="result-body"></tbody>
+            </table>
+            <br>
+            <button onclick="quitGame()" style="width: 100%;">PLAY AGAIN</button>
+        </div>
+    </div>
+
+<script>
+    /**
+     * TANK WARS v2.2
+     * - Fixed resolution to 800x500
+     * - Removed window resize dependency for terrain stability
+     */
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // UI Elements
+    const uiControls = document.getElementById('controls');
+    const angleInput = document.getElementById('angle-input');
+    const powerInput = document.getElementById('power-input');
+    const angleVal = document.getElementById('angle-val');
+    const powerVal = document.getElementById('power-val');
+    const fireBtn = document.getElementById('fire-btn');
+    const dirBtn = document.getElementById('dir-btn');
+    const turnInfo = document.getElementById('turn-info');
+    const turnMsg = document.getElementById('turn-msg');
+    const windText = document.getElementById('wind-text');
+    const windBarFill = document.getElementById('wind-bar-fill');
+    
+    // Modals
+    const startModal = document.getElementById('start-modal');
+    const resultModal = document.getElementById('result-modal');
+
+    // Game Constants
+    const WIDTH = 800;
+    const HEIGHT = 500;
+    const GRAVITY = 9.8; 
+    const EXPLOSION_RADIUS = 40;
+    const VELOCITY_SCALE = 0.03; 
+    const PHYSICS_GRAVITY = GRAVITY * 0.05; 
+    const WIND_SCALE = 0.005; 
+
+    // Game State
+    let players = [];
+    let currentPlayerIndex = 0;
+    let terrain = [];
+    let projectiles = [];
+    let explosions = [];
+    let stars = []; 
+    let wind = 0; 
+    let gameState = 'SETUP'; // SETUP, IDLE, FIRING, GAMEOVER
+    let animationId = null;
+
+    const COLORS = [
+        {name: 'RED', hex: '#FF3333'},
+        {name: 'BLUE', hex: '#3333FF'},
+        {name: 'GREEN', hex: '#33FF33'},
+        {name: 'YELLOW', hex: '#FFFF33'},
+        {name: 'CYAN', hex: '#33FFFF'}
+    ];
+
+    // ==========================================
+    //  Initialization & Setup
+    // ==========================================
+
+    // 고정 크기이므로 resize 이벤트 리스너 제거 및 초기화 단순화
+    initStars();
+
+    function initStars() {
+        stars = [];
+        for(let i=0; i<80; i++) {
+            stars.push({
+                x: Math.random() * WIDTH,
+                y: Math.random() * HEIGHT * 0.7, 
+                size: Math.random() * 2 + 1,
+                alpha: Math.random()
+            });
+        }
+    }
+
+    function updateSetupRows() {
+        const count = document.getElementById('player-count').value;
+        const container = document.getElementById('setup-rows-container');
+        container.innerHTML = '';
+        
+        for(let i=0; i<count; i++) {
+            const row = document.createElement('div');
+            row.className = 'setup-row';
+            row.innerHTML = `
+                <span style="color:${COLORS[i].hex}">P${i+1}</span>
+                <select id="p${i}-type">
+                    <option value="HUMAN">HUMAN</option>
+                    <option value="AI">AI (CPU)</option>
+                </select>
+            `;
+            container.appendChild(row);
+        }
+    }
+    updateSetupRows();
+
+    function startGame() {
+        if (animationId) cancelAnimationFrame(animationId);
+
+        const count = document.getElementById('player-count').value;
+        players = [];
+        for(let i=0; i<count; i++) {
+            const type = document.getElementById(`p${i}-type`).value;
+            players.push({
+                id: i,
+                name: `P${i+1}`,
+                type: type,
+                color: COLORS[i].hex,
+                x: 0,
+                y: 0,
+                hp: 100,
+                angle: 45,
+                power: 500,
+                facingRight: true,
+                dead: false
+            });
+        }
+
+        projectiles = [];
+        explosions = [];
+        startModal.classList.add('hidden');
+        resultModal.classList.add('hidden'); 
+        
+        generateTerrain();
+        spawnTanks();
+        randomizeWind();
+        
+        gameState = 'IDLE';
+        currentPlayerIndex = 0;
+        
+        uiControls.classList.add('active');
+        loop(); 
+        startTurn();
+    }
+
+    function quitGame() {
+        if (animationId) cancelAnimationFrame(animationId); 
+        animationId = null;
+
+        gameState = 'SETUP';
+        
+        uiControls.classList.remove('active');
+        resultModal.classList.add('hidden');
+        startModal.classList.remove('hidden');
+        turnMsg.style.opacity = 0;
+        
+        drawBackgroundOnly();
+    }
+
+    function drawBackgroundOnly() {
+        let grad = ctx.createLinearGradient(0, 0, 0, HEIGHT);
+        grad.addColorStop(0, "#000033");
+        grad.addColorStop(1, "#222266");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, WIDTH, HEIGHT);
+        
+        ctx.fillStyle = "#FFF";
+        stars.forEach(s => {
+            ctx.globalAlpha = s.alpha;
+            ctx.fillRect(s.x, s.y, s.size, s.size);
+        });
+        ctx.globalAlpha = 1.0;
+        
+        ctx.fillStyle = "#0f0";
+        ctx.font = "40px 'VT323'";
+        ctx.textAlign = "center";
+        ctx.fillText("TANK WARS", WIDTH/2, HEIGHT/2 - 80);
+        ctx.font = "20px 'VT323'";
+        ctx.fillText("SELECT PLAYERS TO START", WIDTH/2, HEIGHT/2 - 40);
+    }
+
+    // ==========================================
+    //  Input Handling
+    // ==========================================
+    angleInput.addEventListener('input', (e) => {
+        angleVal.innerText = e.target.value;
+        if (gameState === 'IDLE' && players[currentPlayerIndex] && players[currentPlayerIndex].type === 'HUMAN') {
+            players[currentPlayerIndex].angle = parseInt(e.target.value);
+        }
+    });
+
+    powerInput.addEventListener('input', (e) => {
+        powerVal.innerText = e.target.value;
+        if (gameState === 'IDLE' && players[currentPlayerIndex] && players[currentPlayerIndex].type === 'HUMAN') {
+            players[currentPlayerIndex].power = parseInt(e.target.value);
+        }
+    });
+
+    // ==========================================
+    //  Terrain & Spawning
+    // ==========================================
+
+    function generateTerrain() {
+        terrain = new Float32Array(WIDTH);
+        let noiseScale = 0.004; // 800px에 맞게 스케일 조정
+        let yOffset = HEIGHT * 0.65; 
+
+        for (let x = 0; x < WIDTH; x++) {
+            let y = Math.sin(x * noiseScale) * 100 +
+                    Math.sin(x * noiseScale * 2.1) * 50 +
+                    Math.sin(x * noiseScale * 0.7) * 30;
+            
+            terrain[x] = yOffset - y;
+            if(terrain[x] > HEIGHT - 50) terrain[x] = HEIGHT - 50;
+            if(terrain[x] < 150) terrain[x] = 150;
+        }
+    }
+
+    function spawnTanks() {
+        const segment = WIDTH / players.length;
+        players.forEach((p, i) => {
+            let minX = segment * i + 40;
+            let maxX = segment * (i+1) - 40;
+            p.x = minX + Math.random() * (maxX - minX);
+            // 800px 내에서 안전하게 배치되도록
+            if (p.x < 30) p.x = 30;
+            if (p.x > WIDTH - 30) p.x = WIDTH - 30;
+            p.y = terrain[Math.floor(p.x)];
+        });
+    }
+
+    // ==========================================
+    //  Game Logic
+    // ==========================================
+
+    function randomizeWind() {
+        wind = (Math.random() * 20 - 10).toFixed(1);
+        updateWindUI();
+    }
+
+    function updateWindUI() {
+        windText.textContent = wind > 0 ? `+${wind} >>` : `${wind} <<`;
+        windText.style.color = wind > 0 ? '#ff3333' : '#3333ff';
+        let percent = (wind / 10) * 50; 
+        windBarFill.style.transform = `translateX(${percent}%)`;
+        windBarFill.style.background = wind > 0 ? '#ff3333' : '#3333ff';
+    }
+
+    function startTurn() {
+        if (gameState === 'SETUP') return;
+
+        let p = players[currentPlayerIndex];
+        
+        if (p.dead) {
+            nextTurn();
+            return;
+        }
+
+        turnInfo.innerText = `${p.name}'s Turn (${p.type})`;
+        turnInfo.style.color = p.color;
+        
+        turnMsg.innerText = `${p.name} TURN`;
+        turnMsg.style.color = p.color;
+        turnMsg.style.opacity = 1;
+        setTimeout(() => { if(gameState!=='SETUP') turnMsg.style.opacity = 0; }, 1500);
+
+        if (p.type === 'HUMAN') {
+            angleInput.value = p.angle;
+            powerInput.value = p.power;
+            angleVal.innerText = p.angle;
+            powerVal.innerText = p.power;
+            updateDirButton(p);
+            enableControls(true);
+        } else {
+            enableControls(false);
+            setTimeout(() => {
+                if(gameState === 'IDLE') aiThink();
+            }, 1200);
+        }
+    }
+
+    function aiThink() {
+        if (gameState !== 'IDLE') return;
+
+        const p = players[currentPlayerIndex];
+        
+        let target = null;
+        let minDist = Infinity;
+        players.forEach(other => {
+            if (other.id !== p.id && !other.dead) {
+                let dist = Math.abs(other.x - p.x);
+                if (dist < minDist) {
+                    minDist = dist;
+                    target = other;
+                }
+            }
+        });
+
+        if (!target) { fire(); return; }
+
+        if (target.x > p.x) {
+            p.facingRight = true;
+        } else {
+            p.facingRight = false;
+        }
+
+        let dx = Math.abs(target.x - p.x);
+        let dy = -(target.y - p.y); 
+
+        let windAccel = wind * WIND_SCALE; 
+        let isTailWind = (p.facingRight && wind > 0) || (!p.facingRight && wind < 0);
+        let windForce = Math.abs(wind) * 15; 
+        
+        if (isTailWind) dx -= windForce;
+        else dx += windForce;
+
+        if (dx < 0) dx = 10; 
+
+        let angleDeg = 45 + Math.random() * 30; 
+        let theta = angleDeg * Math.PI / 180;
+
+        let term1 = PHYSICS_GRAVITY * dx * dx;
+        let term2 = 2 * Math.pow(Math.cos(theta), 2) * (dx * Math.tan(theta) - dy);
+        
+        let vSquared = term1 / term2;
+        
+        if (vSquared <= 0 || term2 <= 0) {
+            angleDeg = 20 + Math.random() * 10;
+            theta = angleDeg * Math.PI / 180;
+            p.power = 700 + Math.random() * 200;
+        } else {
+            let v = Math.sqrt(vSquared);
+            let estPower = v / VELOCITY_SCALE;
+            
+            let error = 0.95 + Math.random() * 0.1;
+            p.power = estPower * error;
+        }
+        
+        p.angle = Math.floor(angleDeg);
+        p.power = Math.floor(p.power);
+
+        if (p.power > 1000) p.power = 1000;
+        if (p.power < 100) p.power = 100;
+
+        fire();
+    }
+
+    function toggleDirection() {
+        const p = players[currentPlayerIndex];
+        p.facingRight = !p.facingRight;
+        updateDirButton(p);
+    }
+
+    function updateDirButton(p) {
+        dirBtn.innerText = p.facingRight ? "RIGHT ▶" : "◀ LEFT";
+    }
+
+    function enableControls(enabled) {
+        fireBtn.disabled = !enabled;
+        angleInput.disabled = !enabled;
+        powerInput.disabled = !enabled;
+        dirBtn.disabled = !enabled;
+        
+        uiControls.style.opacity = enabled ? 1 : 0.5;
+    }
+
+    function fire() {
+        if (gameState !== 'IDLE') return;
+        
+        const p = players[currentPlayerIndex];
+        
+        if (p.type === 'HUMAN') {
+            p.angle = parseInt(angleInput.value);
+            p.power = parseInt(powerInput.value);
+        }
+
+        gameState = 'FIRING';
+        enableControls(false);
+
+        let rad;
+        if (p.facingRight) {
+            rad = -p.angle * Math.PI / 180; 
+        } else {
+            rad = -(180 - p.angle) * Math.PI / 180;
+        }
+
+        const velocity = p.power * VELOCITY_SCALE;
+
+        projectiles.push({
+            x: p.x,
+            y: p.y - 15, 
+            vx: Math.cos(rad) * velocity,
+            vy: Math.sin(rad) * velocity,
+            owner: p.id
+        });
+    }
+
+    function nextTurn() {
+        if (gameState === 'SETUP') return;
+
+        const survivors = players.filter(p => !p.dead);
+        if (survivors.length <= 1) {
+            endGame(survivors[0]); 
+            return;
+        }
+
+        gameState = 'IDLE';
+        projectiles = []; 
+        currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+        randomizeWind();
+        startTurn();
+    }
+
+    function endGame(winner) {
+        gameState = 'GAMEOVER';
+        const msg = document.getElementById('winner-msg');
+        const tbody = document.getElementById('result-body');
+        
+        resultModal.classList.remove('hidden');
+        msg.innerText = winner ? `WINNER: ${winner.name}!` : "DRAW GAME!";
+        
+        let sorted = [...players].sort((a,b) => b.hp - a.hp);
+        
+        tbody.innerHTML = '';
+        sorted.forEach((p, i) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${i+1}</td>
+                <td style="color:${p.color}">${p.name} (${p.type})</td>
+                <td>${p.dead ? 'DEAD' : p.hp + '%'}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // ==========================================
+    //  Physics & Update
+    // ==========================================
+
+    function update() {
+        if (gameState === 'GAMEOVER' || gameState === 'SETUP') return;
+
+        // 발사체
+        for (let i = projectiles.length - 1; i >= 0; i--) {
+            let p = projectiles[i];
+            
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += PHYSICS_GRAVITY; 
+            p.vx += wind * WIND_SCALE; 
+
+            if (p.x < -100 || p.x > WIDTH + 100) { // 고정 크기 기준 화면 밖 처리
+                projectiles.splice(i, 1);
+                if(projectiles.length === 0) setTimeout(nextTurn, 500);
+                continue;
+            }
+
+            let tIdx = Math.floor(p.x);
+            if (tIdx >= 0 && tIdx < WIDTH && p.y >= terrain[tIdx]) {
+                explode(p.x, p.y);
+                projectiles.splice(i, 1);
+                if(projectiles.length === 0) setTimeout(nextTurn, 1500);
+            }
+        }
+
+        for (let i = explosions.length - 1; i >= 0; i--) {
+            let e = explosions[i];
+            e.radius += 1.5;
+            e.alpha -= 0.04;
+            if (e.alpha <= 0) explosions.splice(i, 1);
+        }
+
+        players.forEach(p => {
+            if (!p.dead) {
+                let groundY = terrain[Math.floor(p.x)];
+                if (p.y < groundY) {
+                    p.y += 3; 
+                } else {
+                    p.y = groundY; 
+                }
+                
+                if (p.y > HEIGHT) {
+                    p.hp = 0;
+                    p.dead = true;
+                }
+            }
+        });
+    }
+
+    function explode(ex, ey) {
+        explosions.push({x: ex, y: ey, radius: 10, alpha: 1.0});
+
+        let startX = Math.floor(ex - EXPLOSION_RADIUS);
+        let endX = Math.floor(ex + EXPLOSION_RADIUS);
+        
+        for (let x = startX; x <= endX; x++) {
+            if (x >= 0 && x < WIDTH) {
+                let dx = x - ex;
+                let dy = Math.sqrt(EXPLOSION_RADIUS * EXPLOSION_RADIUS - dx * dx);
+                let circleBottom = ey + dy;
+                if (terrain[x] < circleBottom) {
+                    terrain[x] = circleBottom;
+                }
+            }
+        }
+
+        players.forEach(p => {
+            if (!p.dead) {
+                let dx = p.x - ex;
+                let dy = p.y - ey;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+                
+                if (dist < EXPLOSION_RADIUS + 25) {
+                    let dmg = Math.floor((1 - dist / (EXPLOSION_RADIUS + 30)) * 50); 
+                    if (dmg < 0) dmg = 0;
+                    p.hp -= dmg;
+                    if (p.hp <= 0) {
+                        p.hp = 0;
+                        p.dead = true;
+                    }
+                }
+            }
+        });
+    }
+
+    // ==========================================
+    //  Draw
+    // ==========================================
+
+    function draw() {
+        if(gameState === 'SETUP') return;
+
+        let grad = ctx.createLinearGradient(0, 0, 0, HEIGHT);
+        grad.addColorStop(0, "#000033");
+        grad.addColorStop(1, "#222266");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+        ctx.fillStyle = "#FFF";
+        stars.forEach(s => {
+            ctx.globalAlpha = s.alpha;
+            ctx.fillRect(s.x, s.y, s.size, s.size);
+        });
+        ctx.globalAlpha = 1.0;
+
+        ctx.beginPath();
+        ctx.moveTo(0, HEIGHT);
+        for (let x = 0; x < WIDTH; x++) {
+            ctx.lineTo(x, terrain[x]);
+        }
+        ctx.lineTo(WIDTH, HEIGHT);
+        ctx.fillStyle = "#228822"; 
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "#00FF00";
+        ctx.stroke();
+
+        players.forEach(p => {
+            if (p.dead) return;
+
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            
+            ctx.fillStyle = "red";
+            ctx.fillRect(-15, -30, 30, 4);
+            ctx.fillStyle = "#0f0";
+            ctx.fillRect(-15, -30, 30 * (p.hp / 100), 4);
+
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-10, -10, 20, 10); 
+            ctx.fillStyle = "#000";
+            ctx.fillRect(-12, -2, 24, 4);
+
+            ctx.beginPath();
+            ctx.lineWidth = 5;
+            ctx.lineCap = "round";
+            ctx.strokeStyle = p.color;
+            ctx.moveTo(0, -10);
+            
+            let angleRad = p.angle * Math.PI / 180;
+            let barrelLen = 18;
+            let bx, by;
+            if (p.facingRight) {
+                 bx = Math.cos(-angleRad) * barrelLen;
+                 by = Math.sin(-angleRad) * barrelLen;
+            } else {
+                 bx = Math.cos(-(Math.PI - angleRad)) * barrelLen;
+                 by = Math.sin(-(Math.PI - angleRad)) * barrelLen;
+            }
+            
+            ctx.lineTo(bx, by - 10);
+            ctx.stroke();
+
+            ctx.fillStyle = "#fff";
+            ctx.font = "14px monospace";
+            ctx.textAlign = "center";
+            ctx.fillText(p.name, 0, 15);
+
+            if (players[currentPlayerIndex] === p && gameState !== 'GAMEOVER') {
+                ctx.fillStyle = "yellow";
+                ctx.fillText("▼", 0, -40);
+            }
+
+            ctx.restore();
+        });
+
+        ctx.fillStyle = "#FFF";
+        projectiles.forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 3, 0, Math.PI*2);
+            ctx.fill();
+        });
+
+        explosions.forEach(e => {
+            ctx.beginPath();
+            ctx.arc(e.x, e.y, e.radius, 0, Math.PI*2);
+            ctx.fillStyle = `rgba(255, 100, 0, ${e.alpha})`;
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(e.x, e.y, e.radius * 0.7, 0, Math.PI*2);
+            ctx.fillStyle = `rgba(255, 255, 200, ${e.alpha})`;
+            ctx.fill();
+        });
+    }
+
+    function loop() {
+        if(gameState === 'SETUP') return;
+        update();
+        draw();
+        animationId = requestAnimationFrame(loop);
+    }
+    
+    // Initial draw for title
+    drawBackgroundOnly();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Yacht Dice (Solo)</title>
+  <style>
+    :root{
+      --bg:#0f1220;
+      --card:#171a2b;
+      --card2:#1e2240;
+      --text:#e9ecff;
+      --muted:#aab0d6;
+      --accent:#7aa2ff;
+      --danger:#ff6b8a;
+      --ok:#44d19d;
+      --line:rgba(255,255,255,.08);
+      --shadow:0 10px 30px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Malgun Gothic,sans-serif;
+      background:radial-gradient(1200px 700px at 20% -10%, #27306a 0%, transparent 55%),
+                 radial-gradient(900px 600px at 90% 10%, #2a1f5b 0%, transparent 60%),
+                 var(--bg);
+      color:var(--text);
+    }
+    .wrap{max-width:1100px;margin:0 auto;padding:22px}
+    header{
+      display:flex;align-items:center;justify-content:center;margin-bottom:20px;text-align:center;
+    }
+    h1{font-size:24px;margin:0;letter-spacing:.5px;font-weight:800}
+    .sub{color:var(--muted);font-size:13px;line-height:1.4;margin-top:6px}
+    
+    .row{display:grid;grid-template-columns:1.05fr .95fr;gap:16px}
+    @media (max-width:980px){.row{grid-template-columns:1fr}}
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid var(--line);
+      border-radius:16px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      display:flex;flex-direction:column;
+    }
+    .card .hd{
+      padding:14px 16px;
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      border-bottom:1px solid var(--line);
+      background:rgba(0,0,0,.18);
+    }
+    .pill{
+      font-size:12px;color:var(--muted);
+      padding:6px 10px;border:1px solid var(--line);border-radius:999px;
+      background:rgba(255,255,255,.03);
+      white-space:nowrap;
+    }
+    /* 상태 표시줄 강조 스타일 추가 */
+    .status-bar {
+      margin-top: 20px;
+      text-align: center;
+      display: flex;
+      justify-content: center;
+    }
+    .status-bar .pill {
+      font-size: 15px;
+      padding: 8px 18px;
+      background: rgba(122,162,255,.1);
+      border-color: rgba(122,162,255,.3);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .body{padding:16px; flex:1}
+    .actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+    button{
+      appearance:none;border:0;border-radius:12px;padding:10px 12px;
+      font-weight:700;color:#0b1024;background:var(--accent);
+      cursor:pointer;box-shadow:0 10px 18px rgba(122,162,255,.25);
+    }
+    button:disabled{
+      opacity:.45;cursor:not-allowed;box-shadow:none
+    }
+    .btn2{background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--line);box-shadow:none}
+    .btnDanger{background:var(--danger);color:#160510}
+    .hint{font-size:12px;color:var(--muted)}
+    
+    .diceArea{margin-top:24px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:center;min-height:80px}
+    .die{
+      width:68px;height:68px;border-radius:16px;position:relative;
+      background:linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,255,255,.85));
+      border:1px solid rgba(255,255,255,.25);
+      box-shadow:0 14px 18px rgba(0,0,0,.25);
+      cursor:pointer;
+      transform:translateZ(0);
+      user-select:none;
+      display:grid;place-items:center;
+      transition: transform 0.1s;
+    }
+    .die:active{transform:scale(0.95)}
+    .die:focus{outline:3px solid rgba(122,162,255,.35);outline-offset:3px}
+    .die .pips{
+      width:78%;height:78%;
+      display:grid;
+      grid-template-columns:repeat(3, 1fr);
+      grid-template-rows:repeat(3, 1fr);
+      gap:10%;
+      padding:10%;
+    }
+    .pip{
+      width:100%;height:100%;
+      border-radius:999px;
+      background:#0f1220;
+      opacity:0;
+      transform:scale(.8);
+    }
+    /* HOLD 스타일 */
+    .die.held{
+      background:linear-gradient(180deg, rgba(68,209,157,.95), rgba(68,209,157,.75));
+      box-shadow:0 18px 24px rgba(68,209,157,.18);
+    }
+    .die.held::after{
+      content:"HOLD";
+      position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);
+      font-size:10px;font-weight:900;letter-spacing:.6px;
+      color:#05110c;background:rgba(68,209,157,.95);
+      border:1px solid rgba(255,255,255,.25);
+      padding:3px 8px;border-radius:999px;
+    }
+    /* 굴리기 전 상태 (클릭 불가 느낌) */
+    .die.locked {
+        cursor: not-allowed;
+        opacity: 0.9;
+    }
+    
+    .die.rolling{
+      animation:rollShake .65s ease-in-out both;
+    }
+    @keyframes rollShake{
+      0%{transform:translateY(0) rotate(0deg)}
+      10%{transform:translateY(-6px) rotate(9deg)}
+      25%{transform:translateY(2px) rotate(-11deg)}
+      40%{transform:translateY(-4px) rotate(13deg)}
+      55%{transform:translateY(2px) rotate(-8deg)}
+      70%{transform:translateY(-2px) rotate(6deg)}
+      100%{transform:translateY(0) rotate(0deg)}
+    }
+
+    /* Score table */
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px 10px;border-bottom:1px solid var(--line);font-size:13px}
+    th{color:var(--muted);font-weight:700;text-align:left}
+    td:last-child{text-align:right}
+    .scoreBtn{
+      display:inline-flex;gap:8px;align-items:center;
+      padding:8px 10px;border-radius:12px;
+      background:rgba(255,255,255,.06);
+      border:1px solid var(--line);
+      color:var(--text);
+      cursor:pointer;
+      width:100%;
+      justify-content:space-between;
+    }
+    .scoreBtn:hover{background:rgba(255,255,255,.09)}
+    .scoreBtn:disabled{opacity:.45;cursor:not-allowed}
+    .tag{
+      font-size:11px;color:#061029;background:rgba(122,162,255,.9);
+      padding:2px 8px;border-radius:999px;font-weight:900;
+    }
+    .locked{
+      color:rgba(233,236,255,.9);
+      font-weight:800;
+    }
+    .sumBox{
+      display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px
+    }
+    .mini{
+      padding:12px;border-radius:14px;border:1px solid var(--line);
+      background:rgba(0,0,0,.18)
+    }
+    .mini .k{font-size:12px;color:var(--muted)}
+    .mini .v{font-size:18px;font-weight:900;margin-top:4px}
+    .ok{color:var(--ok)}
+    .danger{color:var(--danger)}
+    .footer{
+      margin-top:20px;padding-top:16px; border-top:1px solid var(--line);
+      color:var(--muted);font-size:12px;line-height:1.5; text-align:center;
+    }
+    .kbd{
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+      font-size:11px;padding:2px 6px;border-radius:8px;border:1px solid var(--line);
+      background:rgba(255,255,255,.05);color:var(--text)
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Yacht Dice (Solo)</h1>
+        <div class="sub">
+          5개 주사위 · 턴당 최대 3번 굴림 · 총 13턴<br/>
+          (첫 굴림 후 주사위를 클릭해 <span class="kbd">HOLD</span> 할 수 있습니다)
+        </div>
+      </div>
+    </header>
+
+    <div class="row">
+      <section class="card">
+        <div class="hd">
+          <div style="font-weight:800">주사위</div>
+          </div>
+        <div class="body">
+          <div class="actions">
+            <button id="rollBtn">굴리기</button>
+            <button class="btn2" id="clearHoldBtn">홀드 해제</button>
+            <button class="btn2" id="newTurnBtn" disabled>점수 확정 후 다음 턴</button>
+            <button class="btnDanger" id="resetBtn">리셋</button>
+          </div>
+          
+          <div class="hint" id="hintText" style="margin-top:12px">먼저 굴린 후, 오른쪽에서 족보를 선택해 점수를 확정하세요.</div>
+
+          <div class="diceArea" id="diceArea" aria-label="주사위 영역"></div>
+
+          <div class="status-bar">
+             <div class="pill" id="statusPill">턴 1 / 13 · 남은 굴림: 3</div>
+          </div>
+
+          <div class="footer">
+            자연스러운 굴림 효과: 흔들림/회전 + 굴리는 동안 눈이 빠르게 변화합니다.<br/>
+            저장: 브라우저에 자동 저장됩니다(LocalStorage).
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="hd">
+          <div style="font-weight:800">스코어</div>
+          <div class="pill">클릭하여 점수 확정</div>
+        </div>
+        <div class="body">
+          <table>
+            <thead>
+              <tr><th>족보</th><th>예상 점수</th></tr>
+            </thead>
+            <tbody id="scoreBody"></tbody>
+          </table>
+
+          <div class="sumBox">
+            <div class="mini">
+              <div class="k">상단(1~6) 합계 / 보너스</div>
+              <div class="v" id="upperSum">0 / +0</div>
+              <div class="k" id="upperNeed">보너스 조건: 63 이상</div>
+            </div>
+            <div class="mini">
+              <div class="k">총점</div>
+              <div class="v" id="totalSum">0</div>
+              <div class="k" id="doneHint">13턴 종료 시 게임 완료</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const STORAGE_KEY = "yacht_dice_solo_v2"; // 키 변경(버전업)
+
+  const CATEGORIES = [
+    { key:"ones",   name:"Ones (1)",  group:"upper" },
+    { key:"twos",   name:"Twos (2)",  group:"upper" },
+    { key:"threes", name:"Threes (3)",group:"upper" },
+    { key:"fours",  name:"Fours (4)", group:"upper" },
+    { key:"fives",  name:"Fives (5)", group:"upper" },
+    { key:"sixes",  name:"Sixes (6)", group:"upper" },
+
+    { key:"threeKind", name:"3 of a Kind", group:"lower" },
+    { key:"fourKind",  name:"4 of a Kind", group:"lower" },
+    { key:"fullHouse", name:"Full House",  group:"lower" },
+    { key:"smallStraight", name:"Small Straight", group:"lower" },
+    { key:"largeStraight", name:"Large Straight", group:"lower" },
+    { key:"choice", name:"Choice (Chance)", group:"lower" },
+    { key:"yacht",  name:"Yacht", group:"lower" } 
+  ];
+
+  const $ = (sel) => document.querySelector(sel);
+  const diceArea = $("#diceArea");
+  const scoreBody = $("#scoreBody");
+  const rollBtn = $("#rollBtn");
+  const clearHoldBtn = $("#clearHoldBtn");
+  const newTurnBtn = $("#newTurnBtn");
+  const resetBtn = $("#resetBtn");
+  const statusPill = $("#statusPill");
+  const hintText = $("#hintText");
+  const upperSumEl = $("#upperSum");
+  const upperNeedEl = $("#upperNeed");
+  const totalSumEl = $("#totalSum");
+  const doneHintEl = $("#doneHint");
+
+  const state = {
+    turn: 1,
+    rollsLeft: 3,
+    dice: [1,1,1,1,1],
+    held: [false,false,false,false,false],
+    lockedScores: {},   
+    lastScoredThisTurn: false,
+    gameOver: false
+  };
+
+  function save(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+  function load(){
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    try{
+      const obj = JSON.parse(raw);
+      Object.assign(state, obj);
+    }catch(e){}
+  }
+
+  function counts(dice){
+    const c = Array(7).fill(0);
+    dice.forEach(v => c[v]++);
+    return c;
+  }
+  function sum(dice){ return dice.reduce((a,b)=>a+b,0); }
+
+  function scoreFor(key, dice){
+    const c = counts(dice);
+    const s = sum(dice);
+    const sorted = [...dice].sort((a,b)=>a-b);
+    const hasN = (n) => c.some(x => x >= n);
+    const isFullHouse = () => c.some(x=>x===3) && c.some(x=>x===2);
+    const uniq = [...new Set(sorted)];
+    const hasStraightLen = (len) => {
+      let best = 1, cur = 1;
+      for(let i=1;i<uniq.length;i++){
+        if(uniq[i] === uniq[i-1] + 1){ cur++; best = Math.max(best, cur); }
+        else { cur = 1; }
+      }
+      return best >= len;
+    };
+
+    switch(key){
+      case "ones":   return c[1]*1;
+      case "twos":   return c[2]*2;
+      case "threes": return c[3]*3;
+      case "fours":  return c[4]*4;
+      case "fives":  return c[5]*5;
+      case "sixes":  return c[6]*6;
+      case "threeKind": return hasN(3) ? s : 0;
+      case "fourKind":  return hasN(4) ? s : 0;
+      case "fullHouse": return isFullHouse() ? 25 : 0;
+      case "smallStraight": return hasStraightLen(4) ? 30 : 0;
+      case "largeStraight": return hasStraightLen(5) ? 40 : 0;
+      case "choice": return s;
+      case "yacht": return hasN(5) ? 50 : 0;
+      default: return 0;
+    }
+  }
+
+  function upperSum(){
+    const keys = ["ones","twos","threes","fours","fives","sixes"];
+    return keys.reduce((acc,k)=>acc + (state.lockedScores[k] ?? 0), 0);
+  }
+  function upperBonus(){
+    return upperSum() >= 63 ? 35 : 0;
+  }
+  function totalSum(){
+    const locked = Object.values(state.lockedScores).reduce((a,b)=>a+b,0);
+    return locked + upperBonus();
+  }
+
+  function renderDice(){
+    diceArea.innerHTML = "";
+    
+    // 첫 굴림 전(rollsLeft === 3)인지 체크
+    const isFreshTurn = (state.rollsLeft === 3 && !state.gameOver);
+
+    state.dice.forEach((v, i) => {
+      const die = document.createElement("button");
+      // 굴리기 전에는 locked 클래스 추가 (시각적 효과)
+      const classes = ["die"];
+      if(state.held[i]) classes.push("held");
+      if(isFreshTurn) classes.push("locked");
+      
+      die.className = classes.join(" ");
+      die.type = "button";
+      die.setAttribute("aria-label", `주사위 ${i+1} : ${v} ${state.held[i] ? "(홀드됨)" : ""}`);
+      
+      die.addEventListener("click", () => {
+        if(state.gameOver) return;
+        if(die.classList.contains("rolling")) return;
+
+        // --- 변경 2: 턴 시작 후 첫 굴림 전에는 HOLD 불가 ---
+        if(state.rollsLeft === 3) {
+            // 간단한 시각적 피드백 (흔들림 등)을 추가할 수 있으나, 여기선 얼럿 대신 return만 처리
+            // (사용자가 헷갈리지 않게 힌트 텍스트 변경으로 안내함)
+            return;
+        }
+
+        state.held[i] = !state.held[i];
+        save();
+        renderDice();
+      });
+
+      const pips = document.createElement("div");
+      pips.className = "pips";
+
+      const on = new Set();
+      const TL=0, TC=1, TR=2, ML=3, MC=4, MR=5, BL=6, BC=7, BR=8;
+      if(v===1){ on.add(MC); }
+      if(v===2){ on.add(TL); on.add(BR); }
+      if(v===3){ on.add(TL); on.add(MC); on.add(BR); }
+      if(v===4){ on.add(TL); on.add(TR); on.add(BL); on.add(BR); }
+      if(v===5){ on.add(TL); on.add(TR); on.add(MC); on.add(BL); on.add(BR); }
+      if(v===6){ on.add(TL); on.add(ML); on.add(BL); on.add(TR); on.add(MR); on.add(BR); }
+
+      for(let idx=0; idx<9; idx++){
+        const pip = document.createElement("div");
+        pip.className = "pip";
+        if(on.has(idx)){
+          pip.style.opacity = "1";
+          pip.style.transform = "scale(1)";
+        }
+        pips.appendChild(pip);
+      }
+      die.appendChild(pips);
+      diceArea.appendChild(die);
+    });
+  }
+
+  function renderScores(){
+    scoreBody.innerHTML = "";
+    CATEGORIES.forEach(cat => {
+      const locked = (cat.key in state.lockedScores);
+      const est = locked ? state.lockedScores[cat.key] : scoreFor(cat.key, state.dice);
+
+      const tr = document.createElement("tr");
+      const tdName = document.createElement("td");
+      const tdVal = document.createElement("td");
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "scoreBtn";
+      btn.disabled = locked || state.gameOver;
+      btn.innerHTML = `
+        <span style="display:flex;gap:10px;align-items:center">
+          <span>${cat.name}</span>
+          ${cat.group==="upper" ? `<span class="tag">UPPER</span>` : `<span class="tag">LOWER</span>`}
+        </span>
+        <span style="font-weight:900">${est}</span>
+      `;
+      btn.addEventListener("click", () => lockScore(cat.key));
+
+      tdName.appendChild(btn);
+      tdVal.innerHTML = locked ? `<span class="locked">${state.lockedScores[cat.key]}</span>` : `<span>${est}</span>`;
+
+      tr.appendChild(tdName);
+      tr.appendChild(tdVal);
+      scoreBody.appendChild(tr);
+    });
+
+    const u = upperSum();
+    const b = upperBonus();
+    upperSumEl.textContent = `${u} / +${b}`;
+    const need = Math.max(0, 63 - u);
+    upperNeedEl.textContent = b ? "보너스 달성 (+35)" : `보너스까지 ${need}점 필요`;
+    totalSumEl.textContent = totalSum();
+
+    const done = Object.keys(state.lockedScores).length;
+    doneHintEl.textContent = state.gameOver ? "게임 종료" : `${done}/13 족보 확정됨`;
+  }
+
+  function renderHeader(){
+    statusPill.textContent = `턴 ${state.turn} / 13 · 남은 굴림: ${state.rollsLeft}`;
+    rollBtn.disabled = state.gameOver || state.rollsLeft <= 0;
+    newTurnBtn.disabled = state.gameOver || !state.lastScoredThisTurn;
+    
+    // 힌트 텍스트 업데이트 로직
+    if(state.gameOver) {
+        hintText.textContent = "게임이 종료되었습니다. 리셋으로 다시 시작할 수 있습니다.";
+        hintText.className = "hint danger";
+    } else if(state.lastScoredThisTurn) {
+        hintText.textContent = "점수가 확정되었습니다. [다음 턴]으로 진행하세요.";
+        hintText.className = "hint ok";
+    } else {
+        if(state.rollsLeft === 3) {
+            hintText.textContent = "먼저 [굴리기] 버튼을 눌러주세요. (굴리기 전에는 HOLD 불가)";
+            hintText.className = "hint ok"; // 강조
+        } else {
+            hintText.textContent = "주사위를 클릭해 HOLD하고, 다시 굴리거나 점수를 확정하세요.";
+            hintText.className = "hint";
+        }
+    }
+  }
+
+  function playRollSound(){
+    try{
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      const ctx = new AudioCtx();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = "square";
+      o.frequency.setValueAtTime(180, ctx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(70, ctx.currentTime + 0.12);
+      g.gain.setValueAtTime(0.04, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.14);
+      o.connect(g); g.connect(ctx.destination);
+      o.start();
+      o.stop(ctx.currentTime + 0.15);
+      o.onended = () => ctx.close();
+    }catch(e){}
+  }
+
+  async function rollDice(){
+    if(state.gameOver) return;
+    if(state.rollsLeft <= 0) return;
+
+    playRollSound();
+
+    const diceButtons = [...diceArea.querySelectorAll(".die")];
+    diceButtons.forEach((btn, i) => {
+      if(state.held[i]) return;
+      btn.classList.add("rolling");
+    });
+
+    const duration = 650;
+    const tick = 55;
+    let elapsed = 0;
+
+    while(elapsed < duration){
+      for(let i=0;i<5;i++){
+        if(state.held[i]) continue;
+        state.dice[i] = 1 + Math.floor(Math.random()*6);
+      }
+      renderDice();
+      renderScores();
+      await new Promise(r => setTimeout(r, tick));
+      elapsed += tick;
+    }
+
+    for(let i=0;i<5;i++){
+      if(state.held[i]) continue;
+      state.dice[i] = 1 + Math.floor(Math.random()*6);
+    }
+
+    state.rollsLeft -= 1;
+    save();
+    renderDice();
+    renderScores();
+    renderHeader(); // 여기서 힌트 텍스트 업데이트됨
+
+    diceArea.querySelectorAll(".die").forEach((btn, i) => {
+      btn.classList.remove("rolling");
+    });
+  }
+
+  function lockScore(key){
+    if(state.gameOver) return;
+    if(key in state.lockedScores) return;
+
+    const sc = scoreFor(key, state.dice);
+    state.lockedScores[key] = sc;
+    state.lastScoredThisTurn = true;
+    state.rollsLeft = 0;
+
+    if(Object.keys(state.lockedScores).length >= 13){
+      state.gameOver = true;
+    }
+
+    save();
+    renderScores();
+    renderHeader();
+  }
+
+  function nextTurn(){
+    if(state.gameOver) return;
+    if(!state.lastScoredThisTurn) return;
+
+    state.turn += 1;
+    state.rollsLeft = 3;
+    state.held = [false,false,false,false,false];
+    state.lastScoredThisTurn = false;
+
+    if(state.turn > 13 || Object.keys(state.lockedScores).length >= 13){
+      state.gameOver = true;
+    }
+
+    // --- 변경 2: 다음 턴 시작 시 주사위를 모두 1로 초기화 ---
+    // (랜덤이 아닌 고정값 1, 1, 1, 1, 1)
+    state.dice = [1, 1, 1, 1, 1];
+
+    save();
+    renderDice();
+    renderScores();
+    renderHeader();
+  }
+
+  function clearHold(){
+    if(state.gameOver) return;
+    state.held = [false,false,false,false,false];
+    save();
+    renderDice();
+  }
+
+  function resetAll(){
+    if(!confirm("정말 리셋할까요? (점수/진행 상황이 초기화됩니다)")) return;
+    localStorage.removeItem(STORAGE_KEY);
+    state.turn = 1;
+    state.rollsLeft = 3;
+    state.dice = [1,1,1,1,1];
+    state.held = [false,false,false,false,false];
+    state.lockedScores = {};
+    state.lastScoredThisTurn = false;
+    state.gameOver = false;
+    save();
+    renderDice();
+    renderScores();
+    renderHeader();
+  }
+
+  rollBtn.addEventListener("click", rollDice);
+  clearHoldBtn.addEventListener("click", clearHold);
+  newTurnBtn.addEventListener("click", nextTurn);
+  resetBtn.addEventListener("click", resetAll);
+
+  // init
+  load();
+  renderDice();
+  renderScores();
+  renderHeader();
+})();
+</script>
+</body>
+</html>

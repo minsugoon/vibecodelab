@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>안나눔 로또 & 연금복권 생성기</title>
+    <!-- 화면 캡처를 위한 라이브러리 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #3b82f6;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 500px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px 20px;
+            text-align: center;
+        }
+
+        /* 최신 회차 정보 스타일 */
+        .draw-info-badge {
+            display: inline-block;
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 800;
+        }
+
+        .header p {
+            margin: 8px 0 0;
+            font-size: 14px;
+            opacity: 0.9;
+            font-style: italic;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            background: none;
+            font-size: 16px;
+            font-weight: 600;
+            color: #6b7280;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            color: #764ba2;
+            border-bottom: 3px solid #764ba2;
+            background-color: #f9fafb;
+        }
+
+        .content {
+            padding: 20px;
+            display: none;
+        }
+
+        .content.active {
+            display: block;
+        }
+
+        .control-panel {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        select {
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+            font-size: 16px;
+        }
+
+        .btn-generate {
+            background-color: #764ba2;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            flex: 1;
+        }
+
+        .btn-generate:active {
+            transform: scale(0.95);
+        }
+
+        .btn-capture {
+            background-color: #4b5563;
+            color: white;
+            border: none;
+            padding: 12px 15px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.1s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn-capture:active {
+            transform: scale(0.95);
+        }
+
+        .result-area {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            min-height: 100px;
+        }
+
+        .game-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px;
+            background-color: #f8fafc;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .game-label {
+            font-weight: bold;
+            color: #4b5563;
+            margin-right: 5px;
+            font-size: 14px;
+            width: 40px; 
+            white-space: nowrap; 
+        }
+
+        /* 공 스타일 개선: 그림자 제거, 글씨 검은색으로 변경, 레이아웃 최상단 */
+        .ball {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 800;
+            font-size: 15px;
+            
+            /* 핵심 수정 사항: 글자색 검정, z-index 추가 */
+            color: #000000 !important; 
+            text-shadow: none;
+            position: relative;
+            z-index: 10;
+            
+            box-shadow: inset -2px -2px 5px rgba(0,0,0,0.1);
+        }
+
+        /* 배경색만 유지하고 글자색 지정은 삭제 (위에서 통합) */
+        .ball-yellow { background-color: #fbc400; }
+        .ball-blue { background-color: #69c8f2; }
+        .ball-red { background-color: #ff7272; }
+        .ball-gray { background-color: #a0a0a0; }
+        .ball-green { background-color: #b0d840; }
+        
+        .pension-group {
+            padding: 5px 12px;
+            background-color: #333;
+            color: white;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .ball-pension {
+            background-color: white;
+            border: 2px solid #764ba2;
+            color: #764ba2;
+            width: 36px;
+            height: 36px;
+            text-shadow: none;
+            font-weight: 900;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .footer {
+            text-align: center;
+            padding: 15px;
+            color: #9ca3af;
+            font-size: 12px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container" id="captureArea">
+    <div class="header">
+        <!-- 회차 정보가 여기에 표시됩니다 -->
+        <div id="drawInfoBadge" class="draw-info-badge">로딩 중...</div>
+        <h1 id="headerTitle">안나눔 Lotto 6/45</h1>
+        <p>"절반은 내꺼, 남은 절반도 내꺼"</p>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('lotto')">로또 6/45</button>
+        <button class="tab-btn" onclick="switchTab('pension')">연금복권 720+</button>
+    </div>
+
+    <!-- 로또 탭 -->
+    <div id="lotto" class="content active">
+        <div class="control-panel">
+            <select id="gameCount">
+                <option value="1">1 게임 (1,000원)</option>
+                <option value="2">2 게임 (2,000원)</option>
+                <option value="3">3 게임 (3,000원)</option>
+                <option value="4">4 게임 (4,000원)</option>
+                <option value="5" selected>5 게임 (5,000원)</option>
+            </select>
+            <button class="btn-generate" onclick="generateLotto()">번호 생성</button>
+            <button class="btn-capture" onclick="captureScreen()" title="화면 캡처">📸 저장</button>
+        </div>
+        <div id="lottoResult" class="result-area">
+            <div style="text-align: center; color: #9ca3af; padding: 20px;">
+                구매 금액을 선택하고<br>생성 버튼을 눌러주세요!
+            </div>
+        </div>
+    </div>
+
+    <!-- 연금복권 탭 -->
+    <div id="pension" class="content">
+        <div class="control-panel">
+            <span style="font-weight: bold; color: #4b5563;">1세트 (1,000원)</span>
+            <button class="btn-generate" onclick="generatePension()">번호 생성</button>
+            <button class="btn-capture" onclick="captureScreen()" title="화면 캡처">📸 저장</button>
+        </div>
+        <div id="pensionResult" class="result-area">
+             <div style="text-align: center; color: #9ca3af; padding: 20px;">
+                매달 700만원의 행운을<br>확인해보세요!
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        Based on Excel Algorithm | 당첨 기원 🙏
+    </div>
+</div>
+
+<script>
+    // 전역 변수: 현재 탭 상태 ('lotto' or 'pension')
+    let currentMode = 'lotto';
+
+    // 회차 계산 함수
+    function updateDrawInfo() {
+        const today = new Date();
+        const infoBadge = document.getElementById('drawInfoBadge');
+        const title = document.getElementById('headerTitle');
+
+        if (currentMode === 'lotto') {
+            title.innerText = "안나눔 Lotto 6/45";
+            // 로또 1회차: 2002-12-07 (토)
+            const baseDate = new Date('2002-12-07T20:00:00');
+            // 이번 주 토요일 계산
+            const nextDrawDate = new Date(today);
+            nextDrawDate.setDate(today.getDate() + (6 - today.getDay() + 7) % 7);
+            
+            // 날짜 차이(ms) -> 주(week) 단위 변환
+            const diffTime = nextDrawDate.getTime() - baseDate.getTime();
+            const diffWeeks = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 7));
+            
+            // 회차 수정: +1 추가 (판매중인 회차 표시)
+            const round = diffWeeks + 2; 
+
+            const dateStr = `${nextDrawDate.getFullYear()}-${(nextDrawDate.getMonth()+1).toString().padStart(2,'0')}-${nextDrawDate.getDate().toString().padStart(2,'0')}`;
+            infoBadge.innerText = `이번 주 제 ${round}회 (${dateStr} 추첨)`;
+            
+        } else {
+            title.innerText = "안나눔 연금복권 720+";
+            // 연금복권 720+ 1회차: 2020-05-07 (목)
+            const baseDate = new Date('2020-05-07T12:00:00');
+            // 이번 주 목요일 계산
+            const nextDrawDate = new Date(today);
+            let daysUntilThu = (4 - today.getDay() + 7) % 7;
+            if (daysUntilThu === 0 && today.getHours() >= 13) {
+                daysUntilThu = 7;
+            }
+            nextDrawDate.setDate(today.getDate() + daysUntilThu);
+
+            const diffTime = nextDrawDate.getTime() - baseDate.getTime();
+            const diffWeeks = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 7));
+            
+            // 회차 수정: +1 추가
+            const round = diffWeeks + 2;
+
+            const dateStr = `${nextDrawDate.getFullYear()}-${(nextDrawDate.getMonth()+1).toString().padStart(2,'0')}-${nextDrawDate.getDate().toString().padStart(2,'0')}`;
+            infoBadge.innerText = `이번 주 제 ${round}회 (${dateStr} 추첨)`;
+        }
+    }
+
+    // 초기 실행
+    updateDrawInfo();
+
+    // 탭 전환 함수
+    function switchTab(tabName) {
+        currentMode = tabName;
+        document.querySelectorAll('.content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        
+        document.getElementById(tabName).classList.add('active');
+        event.target.classList.add('active');
+        
+        // 회차 정보 업데이트
+        updateDrawInfo();
+    }
+
+    // 로또 번호 생성 함수
+    function generateLotto() {
+        const count = parseInt(document.getElementById('gameCount').value);
+        const resultDiv = document.getElementById('lottoResult');
+        resultDiv.innerHTML = ''; 
+
+        const labels = ['A', 'B', 'C', 'D', 'E'];
+
+        for (let i = 0; i < count; i++) {
+            let numbers = [];
+            for (let j = 1; j <= 45; j++) numbers.push(j);
+            
+            for (let k = numbers.length - 1; k > 0; k--) {
+                const randomIdx = Math.floor(Math.random() * (k + 1));
+                [numbers[k], numbers[randomIdx]] = [numbers[randomIdx], numbers[k]];
+            }
+
+            const winNumbers = numbers.slice(0, 6).sort((a, b) => a - b);
+
+            const row = document.createElement('div');
+            row.className = 'game-row';
+            
+            let html = `<span class="game-label">${labels[i]} 자 동</span>`;
+            
+            winNumbers.forEach(num => {
+                let colorClass = '';
+                if (num <= 10) colorClass = 'ball-yellow';
+                else if (num <= 20) colorClass = 'ball-blue';
+                else if (num <= 30) colorClass = 'ball-red';
+                else if (num <= 40) colorClass = 'ball-gray';
+                else colorClass = 'ball-green';
+
+                html += `<div class="ball ${colorClass}">${num}</div>`;
+            });
+
+            row.innerHTML = html;
+            resultDiv.appendChild(row);
+        }
+    }
+
+    // 연금복권 번호 생성 함수
+    function generatePension() {
+        const resultDiv = document.getElementById('pensionResult');
+        resultDiv.innerHTML = '';
+
+        const group = Math.floor(Math.random() * 5) + 1;
+        
+        let numbers = [];
+        for(let i=0; i<6; i++) {
+            numbers.push(Math.floor(Math.random() * 10));
+        }
+
+        const row = document.createElement('div');
+        row.className = 'game-row';
+        row.style.justifyContent = 'center';
+
+        let html = `<span class="pension-group">${group}조</span>`;
+        
+        numbers.forEach(num => {
+            html += `<div class="ball ball-pension">${num}</div>`;
+        });
+
+        row.innerHTML = html;
+        resultDiv.appendChild(row);
+    }
+
+    // 스크린샷 캡처 함수
+    function captureScreen() {
+        const element = document.getElementById('captureArea');
+        
+        html2canvas(element, { 
+            backgroundColor: "#ffffff",
+            scale: 2, // 해상도 2배 (선명하게)
+            logging: false,
+            useCORS: true
+        }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `lotto_result_${new Date().getTime()}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        }).catch(err => {
+            alert("캡처에 실패했습니다: " + err);
+        });
+    }
+</script>
+
+</body>
+</html>
