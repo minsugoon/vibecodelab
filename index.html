@@ -1,262 +1,281 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>바이브 코딩 게임즈 | Vibe Coding Games</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>바이브코드 랩 | Vibecode Lab</title>
     <style>
-        /* 기본 스타일 설정 */
-        :root {
-            --primary-color: #6366f1;
-            --bg-color: #f3f4f6;
-            --card-bg: #ffffff;
-            --text-main: #1f2937;
-            --text-sub: #6b7280;
-        }
+      /* 기본 스타일 설정 */
+      :root {
+        --primary-color: #6366f1;
+        --bg-color: #f3f4f6;
+        --card-bg: #ffffff;
+        --text-main: #1f2937;
+        --text-sub: #6b7280;
+      }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            line-height: 1.6;
-        }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        line-height: 1.6;
+      }
 
-        /* 헤더 스타일 */
-        header {
-            text-align: center;
-            padding: 60px 20px;
-            background: linear-gradient(135deg, #4f46e5 0%, #818cf8 100%);
-            color: white;
-            margin-bottom: 40px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
+      /* 헤더 스타일 */
+      header {
+        text-align: center;
+        padding: 60px 20px;
+        background: linear-gradient(135deg, #4f46e5 0%, #818cf8 100%);
+        color: white;
+        margin-bottom: 40px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      }
 
-        header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            font-weight: 800;
-        }
+      header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        font-weight: 800;
+      }
 
-        header p {
-            font-size: 1.1rem;
-            opacity: 0.9;
-        }
+      header p {
+        font-size: 1.1rem;
+        opacity: 0.9;
+      }
 
-        /* 메인 컨테이너 */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px 60px 20px;
-        }
+      /* 메인 컨테이너 */
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px 60px 20px;
+      }
 
-        /* 그리드 레이아웃 (3x2 배열) */
+      /* 그리드 레이아웃 (3x2 배열) */
+      .game-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr); /* 3열 */
+        gap: 30px; /* 카드 사이 간격 */
+      }
+
+      /* 반응형: 태블릿 이하에서는 2열 */
+      @media (max-width: 900px) {
         .game-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr); /* 3열 */
-            gap: 30px; /* 카드 사이 간격 */
+          grid-template-columns: repeat(2, 1fr);
         }
+      }
 
-        /* 반응형: 태블릿 이하에서는 2열 */
-        @media (max-width: 900px) {
-            .game-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
+      /* 반응형: 모바일에서는 1열 */
+      @media (max-width: 600px) {
+        .game-grid {
+          grid-template-columns: 1fr;
         }
+      }
 
-        /* 반응형: 모바일에서는 1열 */
-        @media (max-width: 600px) {
-            .game-grid {
-                grid-template-columns: 1fr;
-            }
-        }
+      /* 게임 카드 스타일 */
+      .game-card {
+        background: var(--card-bg);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        transition:
+          transform 0.3s ease,
+          box-shadow 0.3s ease;
+        text-decoration: none; /* 링크 밑줄 제거 */
+        color: inherit;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
 
-        /* 게임 카드 스타일 */
-        .game-card {
-            background: var(--card-bg);
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            text-decoration: none; /* 링크 밑줄 제거 */
-            color: inherit;
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
+      .game-card:hover {
+        transform: translateY(-10px); /* 호버 시 위로 살짝 뜸 */
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
+      }
 
-        .game-card:hover {
-            transform: translateY(-10px); /* 호버 시 위로 살짝 뜸 */
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
-        }
+      /* 썸네일 이미지 영역 */
+      .card-image {
+        width: 100%;
+        height: 200px;
+        overflow: hidden;
+        background-color: #e5e7eb;
+      }
 
-        /* 썸네일 이미지 영역 */
-        .card-image {
-            width: 100%;
-            height: 200px;
-            overflow: hidden;
-            background-color: #e5e7eb;
-        }
+      .card-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* 비율 유지하며 꽉 채우기 */
+        transition: transform 0.5s ease;
+      }
 
-        .card-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover; /* 비율 유지하며 꽉 채우기 */
-            transition: transform 0.5s ease;
-        }
+      .game-card:hover .card-image img {
+        transform: scale(1.05); /* 호버 시 이미지 살짝 확대 */
+      }
 
-        .game-card:hover .card-image img {
-            transform: scale(1.05); /* 호버 시 이미지 살짝 확대 */
-        }
+      /* 텍스트 영역 */
+      .card-content {
+        padding: 24px;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
 
-        /* 텍스트 영역 */
-        .card-content {
-            padding: 24px;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
+      .game-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+        color: var(--text-main);
+      }
 
-        .game-title {
-            font-size: 1.25rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: var(--text-main);
-        }
+      .game-desc {
+        font-size: 0.95rem;
+        color: var(--text-sub);
+        margin-bottom: 20px;
+      }
 
-        .game-desc {
-            font-size: 0.95rem;
-            color: var(--text-sub);
-            margin-bottom: 20px;
-        }
+      .play-btn {
+        display: inline-block;
+        padding: 8px 16px;
+        background-color: #e0e7ff;
+        color: #4338ca;
+        font-weight: 600;
+        border-radius: 8px;
+        text-align: center;
+        font-size: 0.9rem;
+        align-self: flex-start;
+      }
 
-        .play-btn {
-            display: inline-block;
-            padding: 8px 16px;
-            background-color: #e0e7ff;
-            color: #4338ca;
-            font-weight: 600;
-            border-radius: 8px;
-            text-align: center;
-            font-size: 0.9rem;
-            align-self: flex-start;
-        }
+      .game-card:hover .play-btn {
+        background-color: #4338ca;
+        color: white;
+      }
 
-        .game-card:hover .play-btn {
-            background-color: #4338ca;
-            color: white;
-        }
-        
-        /* 푸터 */
-        footer {
-            text-align: center;
-            padding: 40px;
-            color: var(--text-sub);
-            font-size: 0.9rem;
-        }
+      /* 푸터 */
+      footer {
+        text-align: center;
+        padding: 40px;
+        color: var(--text-sub);
+        font-size: 0.9rem;
+      }
     </style>
-</head>
-<body>
-
+  </head>
+  <body>
     <header>
-        <h1>VIBE CODING GAMES</h1>
-        <p>Gemini와 함께 만든 웹 게임 컬렉션</p>
+      <h1>VIBECODE LAB</h1>
+      <p>바이브코딩으로 만든 웹 콘텐츠 모음.ZIP</p>
     </header>
 
     <div class="container">
-        <div class="game-grid">
-            
-            <a href="./game/Hidden_Typing.html" class="game-card">
-                <div class="card-image">
-                    <img src="./images/Hidden_Typing.JPG" alt="히든 타이핑 게임 화면">
-                </div>
-                <div class="card-content">
-                    <div>
-                        <h2 class="game-title">보이지 않는 타자 연습</h2>
-                        <p class="game-desc">입력 내용이 사라지는 독특한 타자 연습 게임입니다. 당신의 기억력과 정확도를 테스트해보세요.</p>
-                    </div>
-                    <span class="play-btn">게임 시작하기 &rarr;</span>
-                </div>
-            </a>
+      <div class="game-grid">
+        <a href="./game/Hidden_Typing.html" class="game-card">
+          <div class="card-image">
+            <img src="./images/Hidden_Typing.JPG" alt="히든 타이핑 게임 화면" />
+          </div>
+          <div class="card-content">
+            <div>
+              <h2 class="game-title">보이지 않는 타자 연습</h2>
+              <p class="game-desc">
+                입력 내용이 사라지는 독특한 타자 연습 게임입니다. 당신의
+                기억력과 정확도를 테스트해보세요.
+              </p>
+            </div>
+            <span class="play-btn">게임 시작하기 &rarr;</span>
+          </div>
+        </a>
 
-            <a href="./game/Lottery.html" class="game-card">
-                <div class="card-image">
-                    <img src="./images/Lottery.JPG" alt="로또 번호 생성기 화면">
-                </div>
-                <div class="card-content">
-                    <div>
-                        <h2 class="game-title">안나눔 Lotto 6/45</h2>
-                        <p class="game-desc">엑셀 알고리즘 기반의 로또 번호 생성기입니다. 대박의 행운을 기원합니다!</p>
-                    </div>
-                    <span class="play-btn">번호 생성하기 &rarr;</span>
-                </div>
-            </a>
+        <a href="./game/Lottery.html" class="game-card">
+          <div class="card-image">
+            <img src="./images/Lottery.JPG" alt="로또 번호 생성기 화면" />
+          </div>
+          <div class="card-content">
+            <div>
+              <h2 class="game-title">안나눔 Lotto 6/45</h2>
+              <p class="game-desc">
+                엑셀 알고리즘 기반의 로또 번호 생성기입니다. 대박의 행운을
+                기원합니다!
+              </p>
+            </div>
+            <span class="play-btn">번호 생성하기 &rarr;</span>
+          </div>
+        </a>
 
-            <a href="./game/Omok.html" class="game-card">
-                <div class="card-image">
-                    <img src="./images/Omok.JPG" alt="오목 게임 화면">
-                </div>
-                <div class="card-content">
-                    <div>
-                        <h2 class="game-title">바이브 오목</h2>
-                        <p class="game-desc">흑돌과 백돌의 치열한 두뇌 싸움. AI를 상대로 5개를 먼저 완성하세요.</p>
-                    </div>
-                    <span class="play-btn">한 판 두기 &rarr;</span>
-                </div>
-            </a>
+        <a href="./game/Omok.html" class="game-card">
+          <div class="card-image">
+            <img src="./images/Omok.JPG" alt="오목 게임 화면" />
+          </div>
+          <div class="card-content">
+            <div>
+              <h2 class="game-title">바이브 오목</h2>
+              <p class="game-desc">
+                흑돌과 백돌의 치열한 두뇌 싸움. AI를 상대로 5개를 먼저
+                완성하세요.
+              </p>
+            </div>
+            <span class="play-btn">한 판 두기 &rarr;</span>
+          </div>
+        </a>
 
-            <a href="./game/Tank_War.html" class="game-card">
-                <div class="card-image">
-                    <img src="./images/Tank_War.JPG" alt="탱크 워 게임 화면">
-                </div>
-                <div class="card-content">
-                    <div>
-                        <h2 class="game-title">Tank War</h2>
-                        <p class="game-desc">바람과 각도를 계산하여 포탄을 발사하세요! 고전적인 포트리스 스타일의 슈팅 게임.</p>
-                    </div>
-                    <span class="play-btn">전장으로 이동 &rarr;</span>
-                </div>
-            </a>
+        <a href="./game/Tank_War.html" class="game-card">
+          <div class="card-image">
+            <img src="./images/Tank_War.JPG" alt="탱크 워 게임 화면" />
+          </div>
+          <div class="card-content">
+            <div>
+              <h2 class="game-title">Tank War</h2>
+              <p class="game-desc">
+                바람과 각도를 계산하여 포탄을 발사하세요! 고전적인 포트리스
+                스타일의 슈팅 게임.
+              </p>
+            </div>
+            <span class="play-btn">전장으로 이동 &rarr;</span>
+          </div>
+        </a>
 
-            <a href="./game/WM_Game.html" class="game-card">
-                <div class="card-image">
-                    <img src="./images/WM_Game.JPG" alt="ME or WE 게임 화면">
-                </div>
-                <div class="card-content">
-                    <div>
-                        <h2 class="game-title">ME or WE</h2>
-                        <p class="game-desc">협력할 것인가, 배신할 것인가? Killer AI와의 심리전 게임.</p>
-                    </div>
-                    <span class="play-btn">심리전 시작 &rarr;</span>
-                </div>
-            </a>
+        <a href="./game/WM_Game.html" class="game-card">
+          <div class="card-image">
+            <img src="./images/WM_Game.JPG" alt="ME or WE 게임 화면" />
+          </div>
+          <div class="card-content">
+            <div>
+              <h2 class="game-title">ME or WE</h2>
+              <p class="game-desc">
+                협력할 것인가, 배신할 것인가? Killer AI와의 심리전 게임.
+              </p>
+            </div>
+            <span class="play-btn">심리전 시작 &rarr;</span>
+          </div>
+        </a>
 
-            <a href="./game/Yacht_Dice.html" class="game-card">
-                <div class="card-image">
-                    <img src="./images/Yacht_Dice.JPG" alt="요트 다이스 게임 화면">
-                </div>
-                <div class="card-content">
-                    <div>
-                        <h2 class="game-title">Yacht Dice (Solo)</h2>
-                        <p class="game-desc">주사위 5개를 굴려 최적의 조합을 찾아보세요. 전략과 운이 필요한 다이스 게임.</p>
-                    </div>
-                    <span class="play-btn">주사위 굴리기 &rarr;</span>
-                </div>
-            </a>
-
-        </div>
+        <a href="./game/Yacht_Dice.html" class="game-card">
+          <div class="card-image">
+            <img src="./images/Yacht_Dice.JPG" alt="요트 다이스 게임 화면" />
+          </div>
+          <div class="card-content">
+            <div>
+              <h2 class="game-title">Yacht Dice (Solo)</h2>
+              <p class="game-desc">
+                주사위 5개를 굴려 최적의 조합을 찾아보세요. 전략과 운이 필요한
+                다이스 게임.
+              </p>
+            </div>
+            <span class="play-btn">주사위 굴리기 &rarr;</span>
+          </div>
+        </a>
+      </div>
     </div>
 
     <footer>
-        <p>© 2025 Vibe Coding Games by Gemini & <b>minsugOOn</b>. All rights reserved.</p>
+      <p>
+        © 2025 Vibe Coding Games by Gemini & <b>minsugOOn</b>. All rights
+        reserved.
+      </p>
     </footer>
-
-</body>
+  </body>
 </html>
-
